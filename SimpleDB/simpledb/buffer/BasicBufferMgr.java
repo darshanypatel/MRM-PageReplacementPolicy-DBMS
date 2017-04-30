@@ -213,4 +213,8 @@ class BasicBufferMgr {
 //         return buff;
 //      return null;
    }
+
+	public Map<Block, Buffer> getBufferStatistics() {
+		return this.bufferPoolMap;
+	}
 }

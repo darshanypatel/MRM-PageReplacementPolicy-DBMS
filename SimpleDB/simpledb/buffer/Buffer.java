@@ -19,6 +19,8 @@ public class Buffer {
    private int pins = 0;
    private int modifiedBy = -1;  // negative means not modified
    private int logSequenceNumber = -1; // negative means no corresponding log record
+   private int numberOfReads = 0;
+   private int numberOfWrites = 0;
 
    /**
     * Creates a new buffer, wrapping a new 
@@ -36,6 +38,14 @@ public class Buffer {
     */
    public Buffer() {}
    
+   public int getBufferReads() {
+	   return numberOfReads;
+   }
+   
+   public int getBufferWrites() {
+	   return numberOfWrites;
+   }
+   
    /**
     * Returns the integer value at the specified offset of the
     * buffer's page.
@@ -45,6 +55,7 @@ public class Buffer {
     * @return the integer value at that offset
     */
    public int getInt(int offset) {
+	   numberOfReads++;
       return contents.getInt(offset);
    }
 
@@ -57,6 +68,7 @@ public class Buffer {
     * @return the string value at that offset
     */
    public String getString(int offset) {
+	   numberOfReads++;
       return contents.getString(offset);
    }
 
@@ -82,6 +94,7 @@ public class Buffer {
       modifiedBy = txnum;
       if (lsn >= 0)
 	      logSequenceNumber = lsn;
+      numberOfWrites++;
       contents.setInt(offset, val);
    }
 
@@ -103,6 +116,7 @@ public class Buffer {
       modifiedBy = txnum;
       if (lsn >= 0)
 	      logSequenceNumber = lsn;
+      numberOfWrites++;
       contents.setString(offset, val);
    }
 

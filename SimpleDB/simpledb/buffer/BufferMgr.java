@@ -1,8 +1,9 @@
 package simpledb.buffer;
 
-import java.util.ArrayList;
+import java.util.Map;
 
-import simpledb.file.*;
+import simpledb.file.Block;
+import simpledb.file.FileMgr;
 
 /**
  * The publicly-accessible buffer manager.
@@ -44,14 +45,15 @@ public class BufferMgr {
       bufferMgr = new BasicBufferMgr(numbuffers);
    }
    
-   public ArrayList<Integer> getBufferStatistics() {
-	   ArrayList<Integer> stats = new ArrayList<Integer>();
-	   stats.add(numberOfBlocksRead);
-	   stats.add(numberOfBlocksWritten);
-	   stats.add(available());
-	   numberOfBlocksRead = 0;
-	   numberOfBlocksWritten = 0;
-	   return stats;
+   public Map<Block, Buffer> getBufferStatistics() {
+//	   ArrayList<Integer> stats = new ArrayList<Integer>();
+//	   stats.add(numberOfBlocksRead);
+//	   stats.add(numberOfBlocksWritten);
+//	   stats.add(available());
+//	   numberOfBlocksRead = 0;
+//	   numberOfBlocksWritten = 0;
+//	   return stats;
+	   return bufferMgr.getBufferStatistics();
    }
    
    /**

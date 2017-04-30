@@ -1,10 +1,15 @@
 package simpledb.remote;
 
-import simpledb.server.SimpleDB;
-import java.util.*;
-import simpledb.tx.Transaction;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+
+import simpledb.buffer.Buffer;
+import simpledb.file.Block;
+import simpledb.server.SimpleDB;
+import simpledb.tx.Transaction;
 
 /**
  * The RMI server-side implementation of RemoteConnection.
@@ -60,8 +65,14 @@ class RemoteConnectionImpl extends UnicastRemoteObject implements RemoteConnecti
       ArrayList<Integer> stats = SimpleDB.fileMgr().getFileStatistics();
       System.out.println("File statistics=>\nNumber of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
       
-      stats = SimpleDB.bufferMgr().getBufferStatistics();
-      System.out.println("Buffer statistics=>\nNumber of available buffers: " + stats.get(2) + "\nNumber of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
+      Map<Block, Buffer> bufferPool = SimpleDB.bufferMgr().getBufferStatistics();
+//      System.out.println("Buffer statistics=>\nNumber of available buffers: " + stats.get(2) + "\nNumber of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
+      Iterator it = bufferPool.entrySet().iterator();
+	  while (it.hasNext()) {
+		  Map.Entry pair = (Map.Entry)it.next();
+		  Buffer buff = (Buffer) pair.getValue();
+		  System.out.println("Buffer: " + buff + "\nTotal Reads: " + buff.getBufferReads() + "\nTotal Writes: " + buff.getBufferWrites());
+	  }
       tx = new Transaction();
    }
    
@@ -74,9 +85,15 @@ class RemoteConnectionImpl extends UnicastRemoteObject implements RemoteConnecti
       ArrayList<Integer> stats = SimpleDB.fileMgr().getFileStatistics();
       System.out.println("Number of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
       
-      stats = SimpleDB.bufferMgr().getBufferStatistics();
-      System.out.println("Buffer statistics=>\nNumber of available buffers: " + stats.get(2) + "\nNumber of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
-      tx = new Transaction();
+      Map<Block, Buffer> bufferPool = SimpleDB.bufferMgr().getBufferStatistics();
+//    System.out.println("Buffer statistics=>\nNumber of available buffers: " + stats.get(2) + "\nNumber of blocks read: " + stats.get(0) + "\nNumber of block written: " + stats.get(1));
+      Iterator it = bufferPool.entrySet().iterator();
+	  while (it.hasNext()) {
+		  Map.Entry pair = (Map.Entry)it.next();
+		  Buffer buff = (Buffer) pair.getValue();
+		  System.out.println("Buffer: " + buff + "\nTotal Reads: " + buff.getBufferReads() + "\nTotal Writes: " + buff.getBufferWrites());
+	  }
+	  tx = new Transaction();
    }
 }
 
