@@ -48,20 +48,30 @@ class BasicBufferMgr {
 //         if (buff.isModifiedBy(txnum))
 //         buff.flush();
       
-	   Iterator it = bufferPoolMap.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();
-	        Buffer buff = (Buffer) pair.getValue();
+//	   Iterator it = bufferPoolMap.entrySet().iterator();
+	   
+	   for (Block block : bufferPoolMap.keySet()) {
+   		
+	        Buffer buff = bufferPoolMap.get(block);
 	        if (buff.isModifiedBy(txnum)) {
 	        	buff.flush();
 	        }
-	        
-	        // remove block?
-	        //bufferPoolMap.remove(pair.getKey());
-	        
-	        //System.out.println(pair.getKey() + " = " + pair.getValue());
-	        it.remove(); // avoids a ConcurrentModificationException
-	    }
+   		
+   		}
+	   
+//	   while (it.hasNext()) {
+//	        Map.Entry pair = (Map.Entry)it.next();
+//	        Buffer buff = (Buffer) pair.getValue();
+//	        if (buff.isModifiedBy(txnum)) {
+//	        	buff.flush();
+//	        }
+//	        
+//	        // remove block?
+//	        //bufferPoolMap.remove(pair.getKey());
+//	        
+//	        //System.out.println(pair.getKey() + " = " + pair.getValue());
+//	        it.remove(); // avoids a ConcurrentModificationException
+//	    }
 	   
    }
    
@@ -76,13 +86,27 @@ class BasicBufferMgr {
     */
    synchronized Buffer pin(Block blk) {
       Buffer buff = findExistingBuffer(blk);
+      System.out.println("\nPin-> got existing buffer: " + buff);
       if (buff == null) {
          buff = chooseUnpinnedBuffer();
+         System.out.println("\nPin-> got existing buffer: " + buff);
          if (buff == null)
             return null;
          
+         
+        System.out.println("Printing Map:");
+     	for (Block b : bufferPoolMap.keySet()) {
+     		System.out.println("Block: " + b + " and buffer: " + bufferPoolMap.get(b));
+     	}
+         System.out.println("BEFORE -> bufferPoolMap size: " + bufferPoolMap.size() + " " + blk);
+         
          // remove mapping?
-         //bufferPoolMap.remove(blk);
+         if (bufferPoolMap.containsKey(blk)) { 
+        	 System.out.println("contains KEY!" + blk + " " + bufferPoolMap.get(blk));
+         }
+         bufferPoolMap.remove(buff.block());
+         
+         System.out.println("AFTER -> bufferPoolMap size: " + bufferPoolMap.size());
          
          // adding new blk-buff to the map          
          bufferPoolMap.put(blk, buff);
@@ -116,8 +140,24 @@ class BasicBufferMgr {
       
       buff.assignToNew(filename, fmtr);
 
-      // remove mapping?
-      //bufferPoolMap.remove(buff.block());
+      
+      System.out.println("Printing Map before pinNew:");
+   		for (Block b : bufferPoolMap.keySet()) {
+   			System.out.println("Block: " + b + " and buffer: " + bufferPoolMap.get(b));
+   		}
+       System.out.println("BEFORE -> bufferPoolMap size: " + bufferPoolMap.size() + " " + buff.block());
+       
+       // remove mapping?
+       if (bufferPoolMap.containsKey(buff.block())) { 
+      	 System.out.println("contains KEY!" + buff.block() + " " + bufferPoolMap.get(buff.block()));
+       }
+       // remove mapping?
+       bufferPoolMap.remove(buff.block());
+       
+       System.out.println("AFTER -> bufferPoolMap size: " + bufferPoolMap.size());
+       
+      
+      
       
       // is this ok?
       bufferPoolMap.put(buff.block(), buff);
@@ -136,14 +176,16 @@ class BasicBufferMgr {
     * @param buff the buffer to be unpinned
     */
    synchronized void unpin(Buffer buff) {
-	   System.out.println("\ninside unpin(): with buff = " + buff + " and block = " + buff.block());
-	   
+	  System.out.println("\ninside unpin(): with buff = " + buff + " and block = " + buff.block() + " bufferPoolMap = " + bufferPoolMap.get(buff.block()));
 	   
       buff.unpin();
       if (!buff.isPinned()) {
+    	  
+    	  System.out.println("\ninside unpin(): buffer is now available: " + buff);
+    	  
          numAvailable++;
          // remove mapping?
-         //bufferPoolMap.remove(buff.block());
+         // bufferPoolMap.remove(buff.block());
       }
       
       System.out.println("Unpin-> Number of buffers available: " + numAvailable);
@@ -171,39 +213,72 @@ class BasicBufferMgr {
    
     private Buffer chooseUnpinnedBuffer() {
     	
-    	System.out.println("\ninside chooseUnpinnedBuffer(): with numAvailable = " + numAvailable);
+    	System.out.println("\ninside chooseUnpinnedBuffer(): with numAvailable = " + numAvailable + " and totalBuffers = " + totalBuffs);
     	
 //    	if (bufferPoolMap.size() < totalBuffs) {
 //    		return new Buffer();
 //    	}
-    	if (numAvailable > 0) {
+    	
+    	if (totalBuffs > 0) {
+    		totalBuffs--;
     		return new Buffer();
     	}
+    	
+//    	if (numAvailable > 0) {
+//    		return new Buffer();
+//    	}
     	
     	System.out.println("Using MRM replacement policy!");
     	
     	// go through all the used buffers and see if there is any !isPinned buffer
     	// select buffer with highest LSN and !isPinned
     	
+//    	System.out.println("Printing Map:");
+//    	for (Block b : bufferPoolMap.keySet()) {
+//    		System.out.println("Block: " + b + " and buffer: " + bufferPoolMap.get(b));
+//    	}
+    	
 	    int maxLSN = Integer.MIN_VALUE;
 	    Block b = null;
-	    Iterator it = bufferPoolMap.entrySet().iterator();
-	    while (it.hasNext()) {
-		    Map.Entry pair = (Map.Entry)it.next();
-	        Block blk = (Block) pair.getKey();
-	        Buffer buff = (Buffer) pair.getValue();
-	        if (!buff.isPinned()) {
-	    	    if (maxLSN < buff.getLogSequenceNumber())
-	    		    b = blk;
-	    	   	    maxLSN = buff.getLogSequenceNumber();
-	        }
-	        it.remove(); // avoids a ConcurrentModificationException
-	    }
+//	    Iterator it = bufferPoolMap.entrySet().iterator();
+//	    while (it.hasNext()) {
+//		    Map.Entry pair = (Map.Entry)it.next();
+//	        Block blk = (Block) pair.getKey();
+//	        Buffer buff = (Buffer) pair.getValue();
+//	        if (!buff.isPinned()) {
+//	        	System.out.println("\ninside MRM: " + buff + " and " + blk + " LSN: " + buff.getLogSequenceNumber());
+//	    	    if (maxLSN < buff.getLogSequenceNumber()) {
+//	    	    	System.out.println("\nLSN: " + buff.getLogSequenceNumber() + " " + maxLSN + " " + buff + " " + blk);
+//	    	    	b = blk;
+//	    	   	    maxLSN = buff.getLogSequenceNumber();	    	   	
+//	    	    }
+//	        }
+//	        it.remove(); // avoids a ConcurrentModificationException
+//	    }
 	    
-	    Buffer buff = (Buffer) bufferPoolMap.get(b);
+//	    System.out.println("Printing Map:");
+    	for (Block block : bufferPoolMap.keySet()) {
+    		
+	        Buffer buff = bufferPoolMap.get(block);
+	        if (!buff.isPinned()) {
+	        	System.out.println("\ninside MRM: " + buff + " and " + block + " LSN: " + buff.getLogSequenceNumber());
+	    	    if (maxLSN < buff.getLogSequenceNumber()) {
+	    	    	System.out.println("\nLSN: " + buff.getLogSequenceNumber() + " " + maxLSN + " " + buff + " " + block);
+	    	    	b = block;
+	    	   	    maxLSN = buff.getLogSequenceNumber();	    	   	
+	    	    }
+	        }
+    		
+    	}
+	    
+	    System.out.println("\nReturning from MRM: " + b + " " + bufferPoolMap.get(b));
+	    
+	    Buffer buff = bufferPoolMap.get(b);
+	    
+	    System.out.println("\nReturning from MRM: " + buff + " " + b);
 	    
 	    // remove block?
-        bufferPoolMap.remove(b);
+        // bufferPoolMap.remove(b);
 	    
 	    // return buff?
 	    return buff;
