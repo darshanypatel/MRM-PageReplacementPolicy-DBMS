@@ -1,2 +1,4 @@
+The project is to replace the default Page Replacement Policy by "Most Recently Modified replacement" policy.
+
 Command to run server:
-java -cp /Users/darshanypatel/Documents/workspace/SimpleDB simpledb.server.Startup simpleDB
+java -cp ~/SimpleDB simpledb.server.Startup simpleDB
